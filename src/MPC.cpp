@@ -27,7 +27,7 @@ double ref_epsi = 0; // reference heading error
 double ref_v = 40; // reference velocity
 
 
-/ The solver takes all the state variables and actuator
+// The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
 // when one variable starts and another ends to make our lifes easier.
 size_t x_start = 0;
