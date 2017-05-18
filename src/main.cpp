@@ -102,7 +102,7 @@ int main() {
 
           // this is my addition
           steer_value = 0.01;
-          throttle_value = 40;
+          throttle_value = 0.40;
 
 
           json msgJson;
