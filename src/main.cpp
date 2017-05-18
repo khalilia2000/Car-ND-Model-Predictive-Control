@@ -101,6 +101,11 @@ int main() {
           double steer_value;
           double throttle_value;
 
+          // this is my addition
+          steer_value = 0;
+          throttle_value = 40;
+          
+
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
