@@ -101,7 +101,7 @@ int main() {
           double throttle_value;
 
           // this is my addition
-          steer_value = 0;
+          steer_value = 0.01;
           throttle_value = 40;
 
 
