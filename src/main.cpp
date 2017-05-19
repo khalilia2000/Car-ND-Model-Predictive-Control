@@ -66,6 +66,7 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
 }
 
 int main() {
+  
   uWS::Hub h;
 
   // MPC is initialized here!
@@ -90,7 +91,6 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
           /*
           * TODO: Calculate steeering angle and throttle using MPC.
           *
@@ -100,9 +100,34 @@ int main() {
           double steer_value;
           double throttle_value;
 
-          // this is my addition
-          steer_value = 0.01;
-          throttle_value = 0.40;
+          // step 1 - convert coordinates of ptsx and ptsy to local vehicle coordinates
+          Eigen::VectorXd ptsx_vcoord(ptsx.size());
+          Eigen::VectorXd ptsy_vcoord(ptsy.size());
+          for (int i=0; i<ptsx.size(); i++) {
+            ptsx_vcoord(i) =  (ptsx[i] - px)*cos(psi) + (ptsy[i] - py)*sin(psi);
+            ptsy_vcoord(i) = -(ptsx[i] - px)*sin(psi) + (ptsy[i] - py)*cos(psi);
+          }
+          
+          // step 2 - calculate coeffs
+          auto coeffs = polyfit(ptsx_vcoord, ptsy_vcoord, 3);
+          cout << "coeffs = " << coeffs << endl;
+          
+          // step 3 - claculate cte - py is 0 in vehicle coordinates
+          double cte = 0.0 - polyeval(coeffs, 0.0);
+
+          // step 4 - calculate epsi
+          double epsi = 0.0 - atan(coeffs[1]); // note that x is 0 from vehicle coords
+
+          // step 5 - form state variable
+          Eigen::VectorXd state(6);
+          state << 0.0, 0.0, 0.0, v, cte, epsi;
+
+          // step 6 - solve for the actuations
+          auto vars = mpc.Solve(state, coeffs);
+          
+          // set actuation
+          steer_value = -vars[vars.size()-2];
+          throttle_value = vars[vars.size()-1];
 
 
           json msgJson;
@@ -112,6 +137,12 @@ int main() {
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+          int x_start = 0;
+          int y_start = (vars.size()-2)/2;
+          for (int i=0; i<(vars.size()-2)/2; i++) {
+            mpc_x_vals.push_back(vars[x_start+i]);
+            mpc_y_vals.push_back(vars[y_start+i]);
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -122,6 +153,10 @@ int main() {
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+          for (int i=0; i<ptsx_vcoord.size(); i++) {
+            next_x_vals.push_back(ptsx_vcoord(i));
+            next_y_vals.push_back(ptsy_vcoord(i));
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
@@ -141,7 +176,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          //this_thread::sleep_for(chrono::milliseconds(100));
           (*ws).send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
