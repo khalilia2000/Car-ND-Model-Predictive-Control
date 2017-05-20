@@ -12,6 +12,9 @@
 // for convenience
 using json = nlohmann::json;
 
+// This is the length from front to CoG that has a similar radius.
+const double Lf = 2.67;
+
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
@@ -66,6 +69,8 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
 }
 
 int main() {
+
+  const int latency_dt = 100; // in milliseconds
   
   uWS::Hub h;
 
@@ -97,8 +102,8 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value = 0;
+          double throttle_value = 0;
 
           // step 1 - convert coordinates of ptsx and ptsy to local vehicle coordinates
           Eigen::VectorXd ptsx_vcoord(ptsx.size());
@@ -112,15 +117,26 @@ int main() {
           auto coeffs = polyfit(ptsx_vcoord, ptsy_vcoord, 3);
           cout << "coeffs = " << coeffs << endl;
           
-          // step 3 - claculate cte - py is 0 in vehicle coordinates
-          double cte = 0.0 - polyeval(coeffs, 0.0);
+          // step 3 - claculate the state for time 0 using vehicle coordintes
+          double x0 = 0;
+          double y0 = 0;
+          double psi0 = 0;
+          double v0 = v;
+          double cte0 = y0 - polyeval(coeffs, x0);
+          double psides0 = atan(coeffs[1] + 2*coeffs[2]*x0 + 3*coeffs[3]*x0*x0);
+          double epsi0 = psi0 - psides0;
 
-          // step 4 - calculate epsi
-          double epsi = 0.0 - atan(coeffs[1]); // note that x is 0 from vehicle coords
+          // step 4 - calculate state at the end of the latency using vehicle coordinates
+          double x1 = x0 + v0*cos(psi0)*latency_dt/1000.0;
+          double y1 = y0 + v0*sin(psi0)*latency_dt/1000.0;
+          double psi1 = psi0 + v0*steer_value/Lf*latency_dt/1000.0;
+          double v1 = v0 + throttle_value*latency_dt/1000.0;
+          double cte1 = y1 - polyeval(coeffs, x1);
+          double epsi1 = (epsi0 + (v0*steer_value/Lf*latency_dt/1000.0));
 
-          // step 5 - form state variable
+          // step 5 - form state variable using end of latency
           Eigen::VectorXd state(6);
-          state << 0.0, 0.0, 0.0, v, cte, epsi;
+          state << x1, y1, psi1, v1, cte1, epsi1;
 
           // step 6 - solve for the actuations
           auto vars = mpc.Solve(state, coeffs);
@@ -129,7 +145,7 @@ int main() {
           steer_value = -vars[vars.size()-2];
           throttle_value = vars[vars.size()-1];
 
-
+          // setting up the json message
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
@@ -176,7 +192,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          //this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(latency_dt));
           (*ws).send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {

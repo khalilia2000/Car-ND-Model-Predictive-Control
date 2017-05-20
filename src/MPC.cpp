@@ -6,8 +6,11 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 20;
+size_t N = 18;
 double dt = 0.05;
+
+// This is the length from front to CoG that has a similar radius.
+const double Lf = 2.67;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -18,9 +21,6 @@ double dt = 0.05;
 // Lf was tuned until the the radius formed by the simulating the model
 // presented in the classroom matched the previous radius.
 //
-// This is the length from front to CoG that has a similar radius.
-const double Lf = 2.67;
-
 
 
 double ref_cte = 0; // reference cross tracking error
@@ -59,21 +59,21 @@ class FG_eval {
 
     // add cost based on the reference state
     for (int i=0; i<N; i++) {
-      fg[0] += CppAD::pow(vars[cte_start+i]-ref_cte, 2);
-      fg[0] += CppAD::pow(vars[epsi_start+i]-ref_epsi, 2);
-      fg[0] += CppAD::pow(vars[v_start+i]-ref_v, 2);
+      fg[0] += 5*CppAD::pow(vars[cte_start+i]-ref_cte, 2);
+      fg[0] += 5*CppAD::pow(vars[epsi_start+i]-ref_epsi, 2);
+      fg[0] += 5*CppAD::pow(vars[v_start+i]-ref_v, 2);
     }
 
     // Minimize the use of actuators
     for (int i=0; i<N-1; i++) {
-      fg[0] += 40*CppAD::pow(vars[delta_start+i], 2);
-      fg[0] += CppAD::pow(vars[a_start+i], 2);
+      fg[0] += 150*CppAD::pow(vars[delta_start+i], 2);
+      fg[0] += 50*CppAD::pow(vars[a_start+i], 2);
     }
 
     // Minimize value differences between sequential actuations
     for (int i=0; i<N-2; i++) {
-      fg[0] += 125*CppAD::pow(vars[delta_start+i+1]-vars[delta_start+i], 2);
-      fg[0] += 30*CppAD::pow(vars[a_start+i+1]-vars[a_start+i], 2);
+      fg[0] += 150*CppAD::pow(vars[delta_start+i+1]-vars[delta_start+i], 2);
+      fg[0] += 50*CppAD::pow(vars[a_start+i+1]-vars[a_start+i], 2);
     }
 
     // Setup Constrsints
@@ -148,13 +148,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // setting the number of constraints
   size_t n_constraints = N*6;
 
-  // Initial state
-  double x = state[0];
-  double y = state[1];
-  double psi = state[2];
-  double v = state[3];
-  double cte = state[4];
-  double epsi = state[5];
+  // Initial state - corresponding to the end of latency
+  double x0 = state[0];
+  double y0 = state[1];
+  double psi0 = state[2];
+  double v0 = state[3];
+  double cte0 = state[4];
+  double epsi0 = state[5];
+  // 
 
   // Initial value of the independent variables.
   // SHOULD BE 0 except for the initial state.
@@ -163,12 +164,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars[i] = 0;
   }
   // set the initial vriabvle values
-  vars[x_start] = x;
-  vars[y_start] = y;
-  vars[psi_start] = psi;
-  vars[v_start] = v;
-  vars[cte_start] = cte;
-  vars[epsi_start] = epsi;
+  vars[x_start] = x0;
+  vars[y_start] = y0;
+  vars[psi_start] = psi0;
+  vars[v_start] = v0;
+  vars[cte_start] = cte0;
+  vars[epsi_start] = epsi0;
 
   // lower and upper limits
   Dvector vars_lowerbound(n_vars);
@@ -202,19 +203,19 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     constraints_upperbound[i] = 0;
   }
   // initial state constraints
-  constraints_lowerbound[x_start] = x;
-  constraints_lowerbound[y_start] = y;
-  constraints_lowerbound[psi_start] = psi;
-  constraints_lowerbound[v_start] = v;
-  constraints_lowerbound[cte_start] = cte;
-  constraints_lowerbound[epsi_start] = epsi;
+  constraints_lowerbound[x_start] = x0;
+  constraints_lowerbound[y_start] = y0;
+  constraints_lowerbound[psi_start] = psi0;
+  constraints_lowerbound[v_start] = v0;
+  constraints_lowerbound[cte_start] = cte0;
+  constraints_lowerbound[epsi_start] = epsi0;
   //
-  constraints_upperbound[x_start] = x;
-  constraints_upperbound[y_start] = y;
-  constraints_upperbound[psi_start] = psi;
-  constraints_upperbound[v_start] = v;
-  constraints_upperbound[cte_start] = cte;
-  constraints_upperbound[epsi_start] = epsi;
+  constraints_upperbound[x_start] = x0;
+  constraints_upperbound[y_start] = y0;
+  constraints_upperbound[psi_start] = psi0;
+  constraints_upperbound[v_start] = v0;
+  constraints_upperbound[cte_start] = cte0;
+  constraints_upperbound[epsi_start] = epsi0;
 
 
   // object that computes objective and constraints
