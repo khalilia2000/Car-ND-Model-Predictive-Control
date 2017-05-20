@@ -51,11 +51,11 @@ The rubric for this project is locate [here](https://review.udacity.com/#!/rebri
 
 ### Compilation
 
-The code should compile fine using CMake and Make. I did have to make a slight change to the CMakeLists.txt to have it workon Ubuntu 16.04.  
+The code should compile fine using CMake and Make. I did have to make a slight change to the CMakeLists.txt to have it work on Ubuntu 16.04.  
 
 ### The Model
 
-The model consists of a kinematic vehicle model that is described in Udacity courses. The state variable consistsof 6 elements (x, y, psi, v, cte, epsi). The last two elements of the state vector are cross track error and psi error. The initial state that is received from the simulator is passed to the MPC class at each step. The model update equations used for predicting the state of the car are as follows (lines 115 to 120 of (MPC.cpp):  
+The model consists of a kinematic vehicle model that is described in Udacity courses. The state variable consists of 6 elements (x, y, psi, v, cte, epsi). The last two elements of the state vector are cross track error and psi error. The initial state that is received from the simulator is passed to the MPC class at each step. The model update equations used for predicting the state of the car are as follows (lines 115 to 120 of (MPC.cpp):  
 - updating x: x0 + v0 x cos(psi0) x dt
 - updating y: y0 + v0 x sin(psi0) x dt
 - updating psi: psi0 + v0 x delta0 / Lf x dt
@@ -63,15 +63,15 @@ The model consists of a kinematic vehicle model that is described in Udacity cou
 - updating cte: (f0 - y0) + v0 x epsi0 / dt
 - updating epsi: (psi0 - psides0) + (v0 x deltaa0 / Lf x dt)
 
-in which f0 is the evaluatoin of x0 using a 3rd degree fitted polynomial, psides0 is the angle of the tanget to the polynomical, dt is the timestep, and Lf is the distance from the front of the vehicle to the centre of gravity.  
+in which f0 is the evaluation of x0 using a 3rd degree fitted polynomial, psides0 is the angle of the tangent to the polynomial, dt is the timestep, and Lf is the distance from the front of the vehicle to the centre of gravity.  
 
 ### Timestep Length and Frequency  
 
-N and dt were chosen using trial and error. I found that dt values of smaller than 0.1 seconds generally work OK, however what is really important is the total time interval of prediction ahead of the current state (i.e. N x dt). I experimented with different values, and found out that N x dt of approximately 1 seconds provide a good stable implementation. if N x dt is too much (i.e. 2 secons, it results in instability in some cases due not finding a reasonable answer in the solver for some cases. if N x dt is too small, it does not provide a good actuation recommendation. Given the latency of 100 milliseconds, I adopted 0.9 seconds as the prediction time interval (i.e. N x dt), with N = 18 and dt = 0.05.  
+N and dt were chosen using trial and error. I found that dt values of smaller than 0.1 seconds generally work OK, however what is really important is the total time interval of prediction ahead of the current state (i.e. N x dt). I experimented with different values, and found out that N x dt of approximately 1 second provide a good stable implementation. if N x dt is too much (i.e. 2 seconds, it results in instability in some cases due not finding a reasonable answer in the solver for some cases. if N x dt is too small (i.e. less than 0.4 seconds), it does not provide a good actuation recommendation. Given the latency of 100 milliseconds, I adopted 0.9 seconds as the prediction time interval (i.e. N x dt), with N = 18 and dt = 0.05.  
 
 ### Polynomial Fitting and MPC Preprocessing
 
-The waypoints received from the simulator are first pre-procesed and are converted to the vehicle coordinate system. This pre-processing is performed in lines 109 to 114 of main.cpp, using the following formulas:
+The waypoints received from the simulator are first pre-processed and are converted to the vehicle coordinate system. This pre-processing is performed in lines 109 to 114 of main.cpp, using the following formulas:
 ```
 ptsx_vcoord(i) =  (ptsx[i]-px)*cos(psi) + (ptsy[i]-[y)*sin(psi);
 ptsy_vcoord(i) = -(ptsx[i]-px)*sin(psi) + (ptsy[i]-[y)*cos(psi);
@@ -81,10 +81,10 @@ Then a third order polynonmial is fitted to the revised waypoints in line 117 of
 
 ### Model Predictive Control with Latency
 
-A latency of 100 milliseconds is considered in the model. The latency was dealth with using the following approach: 
-1- the state of the model at the end of the latency period was predicted assuming that the previous actuator contorls would be used during the whole latency time period. This was done in lines 129 to 145 of the main.cpp.
+A latency of 100 milliseconds is considered in the model. The latency was dealt with using the following approach: 
+1- the state of the model at the end of the latency period was predicted assuming that the previous actuator controls would be used during the whole latency time period. This was done in lines 129 to 145 of the main.cpp.
 2- The state at the end of the latency was then passed on to the MPC object for estimating the best actuation control. This was then passed to the simulator as the desired control. 
 
 ### Simulation
 
-The is stable and can drive around the track safely at 40 MPH speed. At higher speeds, the car may become unstable.
+The car is stable and can drive around the track safely at 40 MPH speed. At higher speeds, the car may become unstable.
