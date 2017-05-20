@@ -66,8 +66,8 @@ class FG_eval {
 
     // Minimize the use of actuators
     for (int i=0; i<N-1; i++) {
-      fg[0] += 150*CppAD::pow(vars[delta_start+i], 2);
-      fg[0] += 50*CppAD::pow(vars[a_start+i], 2);
+      fg[0] += 500*CppAD::pow(vars[delta_start+i], 2);
+      fg[0] += 9*CppAD::pow(vars[a_start+i], 2);
     }
 
     // Minimize value differences between sequential actuations

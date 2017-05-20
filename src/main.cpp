@@ -141,7 +141,7 @@ int main() {
           // step 6 - solve for the actuations
           auto vars = mpc.Solve(state, coeffs);
           
-          // set actuation
+          // step 7 - set actuations
           steer_value = -vars[vars.size()-2];
           throttle_value = vars[vars.size()-1];
 
