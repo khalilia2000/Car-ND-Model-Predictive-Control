@@ -85,3 +85,6 @@ A latency of 100 milliseconds is considered in the model. The latency was dealth
 1- the state of the model at the end of the latency period was predicted assuming that the previous actuator contorls would be used during the whole latency time period. This was done in lines 129 to 145 of the main.cpp.
 2- The state at the end of the latency was then passed on to the MPC object for estimating the best actuation control. This was then passed to the simulator as the desired control. 
 
+### Simulation
+
+The is stable and can drive around the track safely at 40 MPH speed. At higher speeds, the car may become unstable.
